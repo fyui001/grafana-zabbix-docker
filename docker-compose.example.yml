@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  grafana:
+    image: grafana/grafana:5.2.3
+    environment:
+      GF_INSTALL_PLUGINS: alexanderzobnin-zabbix-app
+    ports:
+    - 3000:3000
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql
+    environment:
+      TZ: ${TZ}
+      DB_SERVER_HOST: ${DB_HOST}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+    ports:
+      - 80:8080
+    depends_on:
+      - db
+      - zabbix-server
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql
+    environment:
+      TZ: ${TZ}
+      DB_SERVER_HOST: ${DB_HOST}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent
+    environment:
+      TZ: ${TZ}
+      ZBX_SERVER_HOST: zabbix-server
+
+  db:
+    image: mysql:5.7
+    environment:
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - TZ=${TZ}
+    ports:
+      - 3306:3306
+    volumes:
+      - db-modules:/var/lib/mysql
+    command: --innodb-use-native-aio=0 --character-set-server=utf8 --collation-server=utf8_bin
+
+volumes:
+  db-modules:
